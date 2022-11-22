@@ -1,4 +1,0 @@
-
-
-def spoof():
-    print("hello")
