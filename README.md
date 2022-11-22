@@ -28,3 +28,7 @@
 # to enable MITM please use 
 ```sudo sysctl net.ipv4.ip_forward=1 ```
 > the program will automaticly  warn you about that
+example : 
+<img width="1251" alt="image" src="https://user-images.githubusercontent.com/90776557/203431574-9e714528-ed85-4bea-9c36-d95aaa651d30.png">
+
+<img width="932" alt="Screen Shot 2022-11-23 at 0 09 15" src="https://user-images.githubusercontent.com/90776557/203431556-07c252d3-d1c0-4859-9e79-c73c226123a1.png">
