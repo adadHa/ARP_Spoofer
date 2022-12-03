@@ -23,7 +23,12 @@ def main(argv :list )->None:
     '''
     usage: ArpSpoofer.py [-h] [-i IFACE] [-s SRC] [-d DELAY] [-gw]
             -t TARGET
-    Spoof ARP tables
+    !!! - use sudo!
+    Purpose: Spoof ARP tables. This attack make the target think that "src address"
+    is associated with the attacker MAC address. Thus, the attacker will get all
+    messages from the target to "src adderss".
+    setting the -gw option will cause to spoof also the gateway, to make it think
+    that "target ip" is associated with ttacker MAC address.
     optional arguments:
         -h, --help          show this help message and exit
         -i IFACE, --iface IFACE
